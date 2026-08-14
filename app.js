@@ -1,6 +1,6 @@
 // ===== CONFIGURATION =====
-// Use relative path - works on both localhost and Render
-const API_URL = window.location.origin + '/api';
+// Use your actual Render backend URL
+const API_URL = 'https://zoobichat.onrender.com/api';
 
 // ===== STATE =====
 let currentUser = null;
