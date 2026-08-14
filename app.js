@@ -1,8 +1,6 @@
 // ===== CONFIGURATION =====
-// Change this to your Render backend URL when deploying
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3001/api' 
-  : 'https://your-backend-url.onrender.com/api';
+// Auto-detect API URL
+const API_URL = window.location.origin + '/api';
 
 // ===== STATE =====
 let currentUser = null;
@@ -74,7 +72,6 @@ async function signin(username) {
     
     currentUser = data.user;
     showChatUI();
-    await loadUserData();
     showSystemMessage(`👋 Welcome ${currentUser.username}! Find someone to chat with.`);
   } catch (error) {
     showError(signinError, error.message);
@@ -87,7 +84,6 @@ async function checkSession() {
     if (data.authenticated) {
       currentUser = data.user;
       showChatUI();
-      await loadUserData();
       showSystemMessage(`👋 Welcome back ${currentUser.username}!`);
       return true;
     }
@@ -110,13 +106,6 @@ async function logout() {
 }
 
 // ===== CHAT FUNCTIONS =====
-async function loadUserData() {
-  // Load any existing chat data if needed
-  if (activeChatPartner) {
-    await loadMessages(activeChatPartner);
-  }
-}
-
 async function loadMessages(partner) {
   try {
     const data = await apiCall(`/messages/${encodeURIComponent(partner)}`);
@@ -141,7 +130,6 @@ async function findAndChat(username) {
   }
   
   try {
-    // Check if user exists
     const data = await apiCall(`/users/${encodeURIComponent(trimmed)}/exists`);
     if (!data.exists) {
       showError(searchError, `User "${trimmed}" not found`);
@@ -152,16 +140,13 @@ async function findAndChat(username) {
     showSearchError('');
     findUserInput.value = '';
     
-    // Show partner info
     chatPartnerName.textContent = trimmed;
     chatPartnerInfo.classList.remove('hidden');
     
-    // Enable messaging
     messageInput.disabled = false;
     sendMsgBtn.disabled = false;
     messageInput.focus();
     
-    // Load messages
     await loadMessages(trimmed);
     showSystemMessage(`💬 Now chatting with ${trimmed}`);
   } catch (error) {
@@ -263,7 +248,6 @@ function renderMessages() {
   messagesContainer.innerHTML = html;
   scrollToBottom();
   
-  // Attach delete handlers
   document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
@@ -309,35 +293,21 @@ function showSearchError(message) {
 }
 
 // ===== EVENT LISTENERS =====
-// Sign in
-signinBtn.addEventListener('click', () => {
-  signin(usernameInput.value);
-});
-
+signinBtn.addEventListener('click', () => signin(usernameInput.value));
 usernameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') signin(usernameInput.value);
 });
 
-// Logout
 logoutBtn.addEventListener('click', logout);
 
-// Find user
-findUserBtn.addEventListener('click', () => {
-  findAndChat(findUserInput.value);
-});
-
+findUserBtn.addEventListener('click', () => findAndChat(findUserInput.value));
 findUserInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') findAndChat(findUserInput.value);
 });
 
-// Close chat
 closeChatBtn.addEventListener('click', closeChat);
 
-// Send message
-sendMsgBtn.addEventListener('click', () => {
-  sendMessage(messageInput.value);
-});
-
+sendMsgBtn.addEventListener('click', () => sendMessage(messageInput.value));
 messageInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -345,7 +315,6 @@ messageInput.addEventListener('keydown', (e) => {
   }
 });
 
-// Character counter
 messageInput.addEventListener('input', updateCharCount);
 
 // ===== INIT =====
@@ -356,5 +325,4 @@ async function init() {
   }
 }
 
-// Start the app
 init();
