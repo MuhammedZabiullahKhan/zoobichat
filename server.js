@@ -33,8 +33,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ===== UPDATED CORS CONFIGURATION =====
-// Allow GitHub Pages origin explicitly
+// ===== CORS - Allow GitHub Pages =====
 const allowedOrigins = [
   'https://muhammedzabiullahkhan.github.io',
   'https://zoobichat.onrender.com',
@@ -44,7 +43,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -56,7 +54,7 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Additional headers for preflight requests
+// Additional headers
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
@@ -66,24 +64,23 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
   next();
 });
 
-// ===== UPDATED SESSION CONFIGURATION =====
+// ===== CRITICAL: Session with cross-domain cookie support =====
 app.use(session({
   secret: process.env.SESSION_SECRET || 'zoobichat-secret-key-2026',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // SET TO FALSE for GitHub Pages (HTTP)
+    secure: false, // Must be false for cross-domain
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'none', // CRITICAL: Allow cross-site requests
-    domain: '.onrender.com' // Allow subdomains
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'none', // CRITICAL: Allows cross-site requests
+    domain: '.onrender.com' // Allows the cookie on Render subdomains
   }
 }));
 
@@ -137,7 +134,6 @@ app.post('/api/auth/signin', (req, res) => {
   req.session.userId = userId;
   req.session.username = trimmedUsername;
   
-  // Save session explicitly
   req.session.save((err) => {
     if (err) {
       console.error('Session save error:', err);
@@ -285,7 +281,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 10. Serve index.html for all other routes (SPA support)
+// 10. Serve index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
