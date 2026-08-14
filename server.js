@@ -9,11 +9,15 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Ensure data directory exists
+// Serve static files from root directory
+app.use(express.static(__dirname));
+
+// Data directory
 const DATA_DIR = path.join(__dirname, 'data');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
+// Ensure data directory exists
 fs.ensureDirSync(DATA_DIR);
 
 // Initialize data files
@@ -31,7 +35,7 @@ app.use(cookieParser());
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || '*',
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -39,13 +43,13 @@ app.use(cors(corsOptions));
 
 // Session configuration
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'default-secret-key',
+  secret: process.env.SESSION_SECRET || 'zoobichat-secret-key-2026',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 24 * 60 * 60 * 1000,
     sameSite: 'lax'
   }
 }));
@@ -79,19 +83,16 @@ app.post('/api/auth/signin', (req, res) => {
     return res.status(400).json({ error: 'Username too long (max 20 characters)' });
   }
   
-  // Check for valid characters (alphanumeric + underscore)
   if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
     return res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores' });
   }
   
   const users = getUsers();
   
-  // Check if username already exists
   if (users[trimmedUsername]) {
     return res.status(409).json({ error: 'Username already taken' });
   }
   
-  // Create new user
   const userId = uuidv4();
   users[trimmedUsername] = {
     id: userId,
@@ -100,7 +101,6 @@ app.post('/api/auth/signin', (req, res) => {
   };
   saveUsers(users);
   
-  // Create session
   req.session.userId = userId;
   req.session.username = trimmedUsername;
   
@@ -113,7 +113,7 @@ app.post('/api/auth/signin', (req, res) => {
   });
 });
 
-// 2. Check session (for auto-login)
+// 2. Check session
 app.get('/api/auth/session', (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: 'No active session' });
@@ -147,7 +147,7 @@ app.post('/api/auth/logout', (req, res) => {
   });
 });
 
-// 4. Check if user exists (for finding chat partners)
+// 4. Check if user exists
 app.get('/api/users/:username/exists', (req, res) => {
   const { username } = req.params;
   const users = getUsers();
@@ -155,7 +155,7 @@ app.get('/api/users/:username/exists', (req, res) => {
   res.json({ exists });
 });
 
-// 5. Get all users (except current)
+// 5. Get all users
 app.get('/api/users', requireAuth, (req, res) => {
   const users = getUsers();
   const currentUsername = req.session.username;
@@ -191,7 +191,6 @@ app.post('/api/messages', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Invalid message' });
   }
   
-  // Check if recipient exists
   const users = getUsers();
   if (!users[to]) {
     return res.status(404).json({ error: 'Recipient not found' });
@@ -213,7 +212,7 @@ app.post('/api/messages', requireAuth, (req, res) => {
   res.json({ message: newMessage });
 });
 
-// 8. Delete message (only if user owns it)
+// 8. Delete message
 app.delete('/api/messages/:messageId', requireAuth, (req, res) => {
   const { messageId } = req.params;
   const currentUser = req.session.username;
@@ -235,13 +234,7 @@ app.delete('/api/messages/:messageId', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
-// 9. Get chat history for all users (for admin/debug)
-app.get('/api/messages', requireAuth, (req, res) => {
-  const messages = getMessages();
-  res.json({ messages });
-});
-
-// Health check
+// 9. Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -251,9 +244,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// 10. Serve index.html for all other routes (SPA support)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 ZoobiChat Server running on port ${PORT}`);
   console.log(`📁 Data directory: ${DATA_DIR}`);
   console.log(`👥 Users: ${Object.keys(getUsers()).length}`);
   console.log(`💬 Messages: ${getMessages().length}`);
+  console.log(`🌐 Access at: https://zoobichat.onrender.com`);
 });
