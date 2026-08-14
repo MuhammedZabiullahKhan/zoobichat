@@ -9,7 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Serve static files from root directory
+// Serve static files
 app.use(express.static(__dirname));
 
 // Data directory
@@ -17,10 +17,8 @@ const DATA_DIR = path.join(__dirname, 'data');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
-// Ensure data directory exists
 fs.ensureDirSync(DATA_DIR);
 
-// Initialize data files
 if (!fs.existsSync(MESSAGES_FILE)) {
   fs.writeJsonSync(MESSAGES_FILE, []);
 }
@@ -33,7 +31,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ===== CORS - Allow GitHub Pages =====
+// ===== CORS for GitHub Pages =====
 const allowedOrigins = [
   'https://muhammedzabiullahkhan.github.io',
   'https://zoobichat.onrender.com',
@@ -70,17 +68,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// ===== CRITICAL: Session with cross-domain cookie support =====
+// ===== SESSION - Cross-domain support =====
 app.use(session({
   secret: process.env.SESSION_SECRET || 'zoobichat-secret-key-2026',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Must be false for cross-domain
+    secure: false,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'none', // CRITICAL: Allows cross-site requests
-    domain: '.onrender.com' // Allows the cookie on Render subdomains
+    sameSite: 'none',
+    domain: '.onrender.com'
   }
 }));
 
@@ -286,11 +284,10 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`🚀 ZoobiChat Server running on port ${PORT}`);
   console.log(`📁 Data directory: ${DATA_DIR}`);
   console.log(`👥 Users: ${Object.keys(getUsers()).length}`);
   console.log(`💬 Messages: ${getMessages().length}`);
-  console.log(`🌐 CORS enabled for: ${allowedOrigins.join(', ')}`);
+  console.log(`🌐 CORS enabled for GitHub Pages`);
 });
