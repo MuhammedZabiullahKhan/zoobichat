@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>✨ LightChat - One to One</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Sign In Screen -->
+    <div id="signinScreen" class="screen signin-screen">
+      <div class="signin-container">
+        <div class="logo">
+          <i class="fas fa-comment-dots"></i>
+          <h1>LightChat</h1>
+          <p class="subtitle">One-to-One Chat</p>
+        </div>
+        
+        <div class="signin-form">
+          <div class="input-group">
+            <i class="fas fa-user"></i>
+            <input 
+              type="text" 
+              id="usernameInput" 
+              placeholder="Choose a unique username" 
+              maxlength="20"
+              autocomplete="off"
+            />
+          </div>
+          <div class="username-rules">
+            <small>Letters, numbers, and underscores only</small>
+          </div>
+          <button id="signinBtn" class="btn-primary">
+            <i class="fas fa-sign-in-alt"></i> Start Chatting
+          </button>
+          <div id="signinError" class="error-message"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Screen -->
+    <div id="chatScreen" class="screen chat-screen hidden">
+      <!-- Header -->
+      <div class="chat-header">
+        <div class="user-info">
+          <div class="avatar">
+            <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="user-details">
+            <span id="currentUsername" class="username">User</span>
+            <span class="status online"><i class="fas fa-circle"></i> Online</span>
+          </div>
+        </div>
+        <button id="logoutBtn" class="btn-icon" title="Sign Out">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+
+      <!-- User Search -->
+      <div class="search-area">
+        <div class="search-input-group">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            id="findUserInput" 
+            placeholder="Find user by username..." 
+            autocomplete="off"
+          />
+          <button id="findUserBtn" class="btn-search">
+            <i class="fas fa-user-plus"></i> Chat
+          </button>
+        </div>
+        <div id="searchError" class="error-message small"></div>
+      </div>
+
+      <!-- Chat Partner Info -->
+      <div id="chatPartnerInfo" class="chat-partner-info hidden">
+        <i class="fas fa-user"></i>
+        <span id="chatPartnerName">Partner</span>
+        <button id="closeChatBtn" class="btn-icon small">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Messages -->
+      <div id="messagesContainer" class="messages-container">
+        <div class="system-message">
+          <i class="fas fa-info-circle"></i>
+          Find a user to start chatting
+        </div>
+      </div>
+
+      <!-- Message Input -->
+      <div class="message-input-area">
+        <div class="input-group message-input-group">
+          <input 
+            type="text" 
+            id="messageInput" 
+            placeholder="Type a message..." 
+            maxlength="300"
+            autocomplete="off"
+            disabled
+          />
+          <button id="sendMsgBtn" class="btn-send" disabled>
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+        <div class="char-count">
+          <span id="charCount">0/300</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
