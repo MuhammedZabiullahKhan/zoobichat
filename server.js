@@ -33,15 +33,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ===== UPDATED CORS CONFIGURATION =====
-// Allow all origins for testing (GitHub Pages)
+// ===== CORS CONFIGURATION =====
+// Allow all origins for testing (works with GitHub Pages + Render)
 app.use(cors({
   origin: true, // Allow any origin
   credentials: true,
   optionsSuccessStatus: 200
 }));
 
-// Also set headers manually for preflight
+// Additional headers for preflight requests
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -63,7 +63,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax'
   }
 }));
