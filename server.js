@@ -33,17 +33,35 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ===== CORS CONFIGURATION =====
-// Allow all origins for testing (works with GitHub Pages + Render)
+// ===== UPDATED CORS CONFIGURATION =====
+// Allow GitHub Pages origin explicitly
+const allowedOrigins = [
+  'https://muhammedzabiullahkhan.github.io',
+  'https://zoobichat.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:3001'
+];
+
 app.use(cors({
-  origin: true, // Allow any origin
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200
 }));
 
 // Additional headers for preflight requests
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -55,16 +73,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Session configuration
+// ===== UPDATED SESSION CONFIGURATION =====
 app.use(session({
   secret: process.env.SESSION_SECRET || 'zoobichat-secret-key-2026',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: false, // SET TO FALSE for GitHub Pages (HTTP)
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax'
+    sameSite: 'none', // CRITICAL: Allow cross-site requests
+    domain: '.onrender.com' // Allow subdomains
   }
 }));
 
@@ -118,12 +137,20 @@ app.post('/api/auth/signin', (req, res) => {
   req.session.userId = userId;
   req.session.username = trimmedUsername;
   
-  res.json({
-    success: true,
-    user: {
-      id: userId,
-      username: trimmedUsername
+  // Save session explicitly
+  req.session.save((err) => {
+    if (err) {
+      console.error('Session save error:', err);
+      return res.status(500).json({ error: 'Failed to create session' });
     }
+    
+    res.json({
+      success: true,
+      user: {
+        id: userId,
+        username: trimmedUsername
+      }
+    });
   });
 });
 
@@ -269,5 +296,5 @@ app.listen(PORT, () => {
   console.log(`📁 Data directory: ${DATA_DIR}`);
   console.log(`👥 Users: ${Object.keys(getUsers()).length}`);
   console.log(`💬 Messages: ${getMessages().length}`);
-  console.log(`🌐 CORS enabled for all origins`);
+  console.log(`🌐 CORS enabled for: ${allowedOrigins.join(', ')}`);
 });
