@@ -1,5 +1,5 @@
 // ===== CONFIGURATION =====
-// Use your actual Render backend URL
+// Use your actual Render backend URL - THIS IS THE KEY FIX!
 const API_URL = 'https://zoobichat.onrender.com/api';
 
 // ===== STATE =====
@@ -45,6 +45,7 @@ function scrollToBottom() {
 
 // ===== API FUNCTIONS =====
 async function apiCall(endpoint, options = {}) {
+  console.log(`📡 Calling: ${API_URL}${endpoint}`); // Debug log
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     credentials: 'include',
@@ -320,6 +321,8 @@ messageInput.addEventListener('input', updateCharCount);
 
 // ===== INIT =====
 async function init() {
+  console.log('🚀 ZoobiChat starting...');
+  console.log(`📡 API URL: ${API_URL}`);
   const hasSession = await checkSession();
   if (!hasSession) {
     showSigninUI();
