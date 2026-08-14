@@ -1,5 +1,5 @@
 // ===== CONFIGURATION =====
-// Use your actual Render backend URL - THIS IS THE KEY FIX!
+// Use your actual Render backend URL
 const API_URL = 'https://zoobichat.onrender.com/api';
 
 // ===== STATE =====
@@ -45,7 +45,7 @@ function scrollToBottom() {
 
 // ===== API FUNCTIONS =====
 async function apiCall(endpoint, options = {}) {
-  console.log(`📡 Calling: ${API_URL}${endpoint}`); // Debug log
+  console.log(`📡 Calling: ${API_URL}${endpoint}`);
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     credentials: 'include',
@@ -54,6 +54,12 @@ async function apiCall(endpoint, options = {}) {
       ...options.headers
     }
   });
+  
+  // Handle 401 gracefully
+  if (response.status === 401) {
+    console.log('🔐 Authentication required');
+    return null;
+  }
   
   if (!response.ok) {
     const error = await response.json();
@@ -71,9 +77,15 @@ async function signin(username) {
       body: JSON.stringify({ username })
     });
     
+    if (!data) {
+      showError(signinError, 'Sign in failed. Please try again.');
+      return;
+    }
+    
     currentUser = data.user;
     showChatUI();
     showSystemMessage(`👋 Welcome ${currentUser.username}! Find someone to chat with.`);
+    console.log('✅ Signed in successfully:', currentUser.username);
   } catch (error) {
     showError(signinError, error.message);
   }
@@ -82,15 +94,17 @@ async function signin(username) {
 async function checkSession() {
   try {
     const data = await apiCall('/auth/session');
-    if (data.authenticated) {
+    if (data && data.authenticated) {
       currentUser = data.user;
       showChatUI();
       showSystemMessage(`👋 Welcome back ${currentUser.username}!`);
+      console.log('✅ Session restored:', currentUser.username);
       return true;
     }
+    console.log('ℹ️ No active session');
     return false;
   } catch (error) {
-    console.log('No active session');
+    console.log('ℹ️ No active session');
     return false;
   }
 }
@@ -102,6 +116,7 @@ async function logout() {
     activeChatPartner = null;
     messages = [];
     showSigninUI();
+    console.log('👋 Logged out');
   } catch (error) {
     console.error('Logout error:', error);
   }
@@ -109,10 +124,20 @@ async function logout() {
 
 // ===== CHAT FUNCTIONS =====
 async function loadMessages(partner) {
+  if (!currentUser) {
+    showSystemMessage('⚠️ Please sign in first');
+    return;
+  }
+  
   try {
     const data = await apiCall(`/messages/${encodeURIComponent(partner)}`);
-    messages = data.messages || [];
-    renderMessages();
+    if (data && data.messages) {
+      messages = data.messages || [];
+      renderMessages();
+    } else {
+      messages = [];
+      renderMessages();
+    }
   } catch (error) {
     console.error('Load messages error:', error);
     showSystemMessage('⚠️ Could not load messages');
@@ -120,6 +145,11 @@ async function loadMessages(partner) {
 }
 
 async function findAndChat(username) {
+  if (!currentUser) {
+    showError(searchError, 'Please sign in first');
+    return;
+  }
+  
   const trimmed = username.trim();
   if (!trimmed) {
     showError(searchError, 'Please enter a username');
@@ -133,6 +163,11 @@ async function findAndChat(username) {
   
   try {
     const data = await apiCall(`/users/${encodeURIComponent(trimmed)}/exists`);
+    if (!data) {
+      showError(searchError, 'Please sign in again');
+      return;
+    }
+    
     if (!data.exists) {
       showError(searchError, `User "${trimmed}" not found`);
       return;
@@ -157,6 +192,11 @@ async function findAndChat(username) {
 }
 
 async function sendMessage(text) {
+  if (!currentUser) {
+    showSystemMessage('⚠️ Please sign in first');
+    return;
+  }
+  
   if (!activeChatPartner) {
     showSystemMessage('⚠️ Please find a user to chat with');
     return;
@@ -173,6 +213,11 @@ async function sendMessage(text) {
       })
     });
     
+    if (!data) {
+      showSystemMessage('⚠️ Please sign in again');
+      return;
+    }
+    
     messages.push(data.message);
     renderMessages();
     messageInput.value = '';
@@ -184,8 +229,18 @@ async function sendMessage(text) {
 }
 
 async function deleteMessage(messageId) {
+  if (!currentUser) {
+    showSystemMessage('⚠️ Please sign in first');
+    return;
+  }
+  
   try {
-    await apiCall(`/messages/${messageId}`, { method: 'DELETE' });
+    const data = await apiCall(`/messages/${messageId}`, { method: 'DELETE' });
+    if (!data) {
+      showSystemMessage('⚠️ Please sign in again');
+      return;
+    }
+    
     messages = messages.filter(m => m.id !== messageId);
     renderMessages();
   } catch (error) {
@@ -208,11 +263,11 @@ function closeChat() {
 function renderMessages() {
   if (!messagesContainer) return;
   
-  if (!activeChatPartner) {
+  if (!activeChatPartner || !currentUser) {
     messagesContainer.innerHTML = `
       <div class="system-message">
         <i class="fas fa-info-circle"></i>
-        Find a user to start chatting
+        ${!currentUser ? 'Please sign in to start chatting' : 'Find a user to start chatting'}
       </div>
     `;
     return;
@@ -329,4 +384,5 @@ async function init() {
   }
 }
 
+// Start the app
 init();
