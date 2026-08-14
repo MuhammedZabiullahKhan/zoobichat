@@ -1,5 +1,5 @@
 // ===== CONFIGURATION =====
-// Auto-detect API URL
+// Use relative path - works on both localhost and Render
 const API_URL = window.location.origin + '/api';
 
 // ===== STATE =====
@@ -89,6 +89,7 @@ async function checkSession() {
     }
     return false;
   } catch (error) {
+    console.log('No active session');
     return false;
   }
 }
