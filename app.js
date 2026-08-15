@@ -1,6 +1,6 @@
 // ===== CONFIGURATION =====
-// Use your actual Render backend URL
-const API_URL = '/api';
+// Use full backend URL (frontend and backend are on different Render services)
+const API_URL = 'https://zoobichat.onrender.com/api';
 
 // ===== STATE =====
 let currentUser = null;
